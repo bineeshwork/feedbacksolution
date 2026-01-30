@@ -6,8 +6,37 @@ import time
 import os
 from datetime import datetime
 
+from constants.strings import (
+    APP_PAGE_TITLE,
+    APP_MAIN_TITLE,
+    APP_INSTRUCTIONS,
+    APP_LABEL_FULL_NAME,
+    APP_LABEL_EMAIL,
+    APP_LABEL_UNAVAILABLE_DATES,
+    APP_LABEL_COMMENTS,
+    APP_BUTTON_SUBMIT,
+    APP_ERROR_NAME_EMAIL_REQUIRED,
+    APP_WARNING_NO_DATES,
+    APP_SUCCESS_SUBMITTED,
+    APP_SPINNER_SUBMITTING,
+    APP_ERROR_S3_INIT,
+    APP_ERROR_SUBMISSION_FAILED,
+    APP_SIDEBAR_TITLE,
+    APP_SIDEBAR_ABOUT,
+    APP_SIDEBAR_PRIVACY_TITLE,
+    APP_SIDEBAR_PRIVACY_TEXT,
+    APP_FOOTER_COPYRIGHT,
+)
+from constants.config import (
+    APP_USE_S3,
+    APP_S3_BUCKET_NAME,
+    APP_S3_KEY_PREFIX,
+    DEFAULT_AWS_REGION,
+    ENABLE_BALLOONS,
+)
+
 # Set Streamlit page configuration
-st.set_page_config(page_title="Arkansas Scheduling Poll", layout="centered")
+st.set_page_config(page_title=APP_PAGE_TITLE, layout="centered")
 
 # Custom styling using markdown
 st.markdown("""
@@ -47,9 +76,9 @@ date_options = [
     "Monday, Oct 13", "Tuesday, Oct 14", "Wednesday, Oct 15", "Thursday, Oct 16", "Friday, Oct 17"
 ]
 
-# AWS S3 Configuration
-USE_S3 = True  # Set to False to disable S3 and save locally
-S3_BUCKET_NAME = "awsbin-arkansasonline-poll"
+# AWS S3 Configuration (using environment variables from config)
+USE_S3 = APP_USE_S3
+S3_BUCKET_NAME = APP_S3_BUCKET_NAME
 
 # Initialize S3 Client if needed
 if USE_S3:
@@ -58,33 +87,33 @@ if USE_S3:
             's3',
             aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
             aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY'),
-            region_name=os.getenv('AWS_DEFAULT_REGION', 'us-east-1')
+            region_name=os.getenv('AWS_DEFAULT_REGION', DEFAULT_AWS_REGION)
         )
     except Exception as e:
-        st.error(f"Failed to initialize AWS S3: {str(e)}")
+        st.error(APP_ERROR_S3_INIT.format(error=str(e)))
         st.stop()
 
 # Header Section
-st.title("📍 Arkansas Onsite Scheduling Poll")
-st.write("Select **any dates** below you are **not available** to travel or attend the in-person event in **Little Rock, AR**.")
+st.title(APP_MAIN_TITLE)
+st.write(APP_INSTRUCTIONS)
 
 # Main Form
 with st.form("availability_form"):
     respondent_id = str(uuid.uuid4())[:8]
-    name = st.text_input("Full Name")
-    email = st.text_input("Email Address")
-    unavailable_dates = st.multiselect("What dates are you *NOT* available?", date_options)
+    name = st.text_input(APP_LABEL_FULL_NAME)
+    email = st.text_input(APP_LABEL_EMAIL)
+    unavailable_dates = st.multiselect(APP_LABEL_UNAVAILABLE_DATES, date_options)
 
-    comments = st.text_area("Optional Comments / Notes")
+    comments = st.text_area(APP_LABEL_COMMENTS)
 
-    submit = st.form_submit_button("Submit Availability")
+    submit = st.form_submit_button(APP_BUTTON_SUBMIT)
 
 # Handle submission
 if submit:
     if not name or not email:
-        st.error("Please provide both your name and email.")
+        st.error(APP_ERROR_NAME_EMAIL_REQUIRED)
     elif not unavailable_dates:
-        st.warning("You haven't selected any dates. Are you available all dates?")
+        st.warning(APP_WARNING_NO_DATES)
     else:
         submission = {
             "Respondent ID": respondent_id,
@@ -100,13 +129,13 @@ if submit:
 
         try:
             # Show progress bar
-            with st.spinner("Submitting your response..."):
+            with st.spinner(APP_SPINNER_SUBMITTING):
                 filename = f"arkansas_poll_{respondent_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}.json"
 
                 if USE_S3:
                     s3.put_object(
                         Bucket=S3_BUCKET_NAME,
-                        Key=f"scheduling/{filename}",
+                        Key=f"{APP_S3_KEY_PREFIX}/{filename}",
                         Body=json_data
                     )
                 else:
@@ -114,23 +143,19 @@ if submit:
                     with open(f"./{filename}", "w") as file:
                         file.write(json_data)
 
-                st.success("✅ Your availability has been submitted!")
-                st.balloons()
+                st.success(APP_SUCCESS_SUBMITTED)
+                if ENABLE_BALLOONS:
+                    st.balloons()
         except Exception as e:
-            st.error(f"❌ Submission failed: {e}")
+            st.error(APP_ERROR_SUBMISSION_FAILED.format(error=e))
 
 # Sidebar Helper
-st.sidebar.title("ℹ️ About this Poll")
-st.sidebar.write("""
-This poll helps us schedule an in-person event based on staff availability.
-Please select any dates you are **not available**.
-""")
+st.sidebar.title(APP_SIDEBAR_TITLE)
+st.sidebar.write(APP_SIDEBAR_ABOUT)
 st.sidebar.markdown("---")
-st.sidebar.subheader("🔒 Data Privacy Notice")
-st.sidebar.write("""
-Your responses are confidential and will only be used for internal scheduling purposes.
-""")
+st.sidebar.subheader(APP_SIDEBAR_PRIVACY_TITLE)
+st.sidebar.write(APP_SIDEBAR_PRIVACY_TEXT)
 
 # Footer
 st.markdown("---")
-st.caption("© 2025 State of Arkansas Event Coordination Team")
+st.caption(APP_FOOTER_COPYRIGHT)

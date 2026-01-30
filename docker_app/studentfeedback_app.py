@@ -6,8 +6,60 @@ from datetime import datetime
 import time
 import os
 
+from constants.strings import (
+    FEEDBACK_PAGE_TITLE,
+    FEEDBACK_MAIN_TITLE,
+    FEEDBACK_DESCRIPTION,
+    FEEDBACK_ANONYMIZED_ID,
+    FEEDBACK_LABEL_PROGRAM_NAME,
+    FEEDBACK_HELP_PROGRAM_NAME,
+    FEEDBACK_LABEL_COURSE_SATISFACTION,
+    FEEDBACK_HELP_COURSE_SATISFACTION,
+    FEEDBACK_SLIDER_SATISFACTION_DESCRIPTION,
+    FEEDBACK_LABEL_LEARNING_OUTCOMES,
+    FEEDBACK_HELP_LEARNING_OUTCOMES,
+    FEEDBACK_LABEL_SUPPORT_SERVICES,
+    FEEDBACK_HELP_SUPPORT_SERVICES,
+    FEEDBACK_LABEL_ENGAGEMENT,
+    FEEDBACK_HELP_ENGAGEMENT,
+    FEEDBACK_ENGAGEMENT_OPTIONS,
+    FEEDBACK_ENGAGEMENT_DEFAULT,
+    FEEDBACK_LABEL_IMPROVEMENT_AREAS,
+    FEEDBACK_HELP_IMPROVEMENT_AREAS,
+    FEEDBACK_IMPROVEMENT_OPTIONS,
+    FEEDBACK_LABEL_OPEN_FEEDBACK,
+    FEEDBACK_HELP_OPEN_FEEDBACK,
+    FEEDBACK_LABEL_FUTURE_PLANS,
+    FEEDBACK_HELP_FUTURE_PLANS,
+    FEEDBACK_FUTURE_PLANS_OPTIONS,
+    FEEDBACK_LABEL_ADDITIONAL_COMMENTS,
+    FEEDBACK_LABEL_STRENGTHS,
+    FEEDBACK_HELP_STRENGTHS,
+    FEEDBACK_LABEL_WEAKNESSES,
+    FEEDBACK_HELP_WEAKNESSES,
+    FEEDBACK_BUTTON_SUBMIT,
+    FEEDBACK_ERROR_PROGRAM_NAME,
+    FEEDBACK_ERROR_FEEDBACK_REQUIRED,
+    FEEDBACK_SUCCESS_SUBMITTED,
+    FEEDBACK_ERROR_SAVE_FAILED,
+    FEEDBACK_SIDEBAR_FAQ_TITLE,
+    FEEDBACK_SIDEBAR_FAQ_QUESTION,
+    FEEDBACK_SIDEBAR_FAQ_ANSWER,
+    FEEDBACK_SIDEBAR_INFO,
+    FEEDBACK_SIDEBAR_PRIVACY_TITLE,
+    FEEDBACK_SIDEBAR_PRIVACY_TEXT,
+    FEEDBACK_FOOTER_COPYRIGHT,
+)
+from constants.config import (
+    FEEDBACK_S3_BUCKET_NAME,
+    FEEDBACK_LOGO_PATH,
+    DEFAULT_AWS_REGION,
+    ENABLE_BALLOONS,
+    ENABLE_PROGRESS_BAR,
+)
+
 # Set page config
-st.set_page_config(page_title="Texas A&M Student Feedback Form", layout="wide")
+st.set_page_config(page_title=FEEDBACK_PAGE_TITLE, layout="wide")
 
 # Custom theme for Texas A&M
 st.markdown("""
@@ -48,54 +100,54 @@ st.markdown("""
 s3 = boto3.client('s3',
     aws_access_key_id=os.environ.get('AWS_ACCESS_KEY_ID'),
     aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY'),
-    region_name=os.environ.get('AWS_DEFAULT_REGION')
+    region_name=os.environ.get('AWS_DEFAULT_REGION', DEFAULT_AWS_REGION)
 )
 
-# Get S3 bucket name from environment variable
-S3_BUCKET_NAME = "awsbin-amazonq-assets"
+# Get S3 bucket name from environment variable (via config)
+S3_BUCKET_NAME = FEEDBACK_S3_BUCKET_NAME
 
 # Header
 col1, col2, col3 = st.columns([1,2,1])
 with col2:
-    st.image("./primaryTAM.png", width=300)
-st.title("Student Feedback Form")
-st.write("Your opinion matters! Help us improve our programs.")
+    st.image(FEEDBACK_LOGO_PATH, width=300)
+st.title(FEEDBACK_MAIN_TITLE)
+st.write(FEEDBACK_DESCRIPTION)
 
 # Main form
 with st.form("feedback_form"):
     student_id = str(uuid.uuid4())[:8]  # Generate anonymized ID
-    st.write(f"Your anonymized Student ID: {student_id}")
+    st.write(FEEDBACK_ANONYMIZED_ID.format(student_id=student_id))
 
-    program_name = st.text_input("Program Name", help="Enter the full name of your academic program")
+    program_name = st.text_input(FEEDBACK_LABEL_PROGRAM_NAME, help=FEEDBACK_HELP_PROGRAM_NAME)
     
-    course_satisfaction = st.slider("Course Satisfaction", 1, 5, 3, help="Rate your overall satisfaction with the course")
-    st.write("1: Very Dissatisfied, 5: Very Satisfied")
+    course_satisfaction = st.slider(FEEDBACK_LABEL_COURSE_SATISFACTION, 1, 5, 3, help=FEEDBACK_HELP_COURSE_SATISFACTION)
+    st.write(FEEDBACK_SLIDER_SATISFACTION_DESCRIPTION)
     
-    learning_outcomes = st.slider("Learning Outcomes Achievement", 1, 5, 3, help="How well did the course meet its stated learning objectives?")
+    learning_outcomes = st.slider(FEEDBACK_LABEL_LEARNING_OUTCOMES, 1, 5, 3, help=FEEDBACK_HELP_LEARNING_OUTCOMES)
     
-    support_services = st.slider("Support Services Rating", 1, 5, 3, help="Rate the quality of support services provided")
+    support_services = st.slider(FEEDBACK_LABEL_SUPPORT_SERVICES, 1, 5, 3, help=FEEDBACK_HELP_SUPPORT_SERVICES)
     
-    engagement_level = st.select_slider("Engagement Level", options=["Low", "Medium", "High"], value="Medium", help="How engaged were you in the course activities?")
+    engagement_level = st.select_slider(FEEDBACK_LABEL_ENGAGEMENT, options=FEEDBACK_ENGAGEMENT_OPTIONS, value=FEEDBACK_ENGAGEMENT_DEFAULT, help=FEEDBACK_HELP_ENGAGEMENT)
     
-    improvement_areas = st.multiselect("Areas for Improvement", 
-        ["Course Content", "Teaching Methods", "Assessment", "Resources", "Support Services"],
-        help="Select all areas where you think improvements can be made")
+    improvement_areas = st.multiselect(FEEDBACK_LABEL_IMPROVEMENT_AREAS, 
+        FEEDBACK_IMPROVEMENT_OPTIONS,
+        help=FEEDBACK_HELP_IMPROVEMENT_AREAS)
     
-    feedback = st.text_area("Open-ended Feedback", help="Please provide any additional comments or suggestions")
+    feedback = st.text_area(FEEDBACK_LABEL_OPEN_FEEDBACK, help=FEEDBACK_HELP_OPEN_FEEDBACK)
     
-    future_plans = st.selectbox("Future Plans", ["Continue", "Transfer", "Undecided"], help="What are your plans for the next academic term?")
+    future_plans = st.selectbox(FEEDBACK_LABEL_FUTURE_PLANS, FEEDBACK_FUTURE_PLANS_OPTIONS, help=FEEDBACK_HELP_FUTURE_PLANS)
 
-    with st.expander("Additional Comments"):
-        strengths = st.text_area("Program Strengths", help="What aspects of the program do you find most valuable?")
-        weaknesses = st.text_area("Areas for Enhancement", help="What aspects of the program could be improved?")
+    with st.expander(FEEDBACK_LABEL_ADDITIONAL_COMMENTS):
+        strengths = st.text_area(FEEDBACK_LABEL_STRENGTHS, help=FEEDBACK_HELP_STRENGTHS)
+        weaknesses = st.text_area(FEEDBACK_LABEL_WEAKNESSES, help=FEEDBACK_HELP_WEAKNESSES)
 
-    submitted = st.form_submit_button("Submit Feedback")
+    submitted = st.form_submit_button(FEEDBACK_BUTTON_SUBMIT)
 
 if submitted:
     if not program_name:
-        st.error("Please enter your program name.")
+        st.error(FEEDBACK_ERROR_PROGRAM_NAME)
     elif not feedback:
-        st.error("Please provide some feedback in the open-ended section.")
+        st.error(FEEDBACK_ERROR_FEEDBACK_REQUIRED)
     else:
         feedback_data = {
             "Student ID": student_id,
@@ -119,11 +171,12 @@ if submitted:
         filename = f"feedback_{student_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}.txt"
 
         try:
-            # Show progress bar
-            progress_bar = st.progress(0)
-            for i in range(100):
-                time.sleep(0.01)
-                progress_bar.progress(i + 1)
+            # Show progress bar if enabled
+            if ENABLE_PROGRESS_BAR:
+                progress_bar = st.progress(0)
+                for i in range(100):
+                    time.sleep(0.01)
+                    progress_bar.progress(i + 1)
 
             # Upload to S3
             s3.put_object(
@@ -131,27 +184,25 @@ if submitted:
                 Key=filename,
                 Body=feedback_json
             )
-            st.success("Thank you! Your feedback has been submitted successfully.")
-            st.balloons()
+            st.success(FEEDBACK_SUCCESS_SUBMITTED)
+            if ENABLE_BALLOONS:
+                st.balloons()
         except Exception as e:
-            st.error(f"An error occurred while saving your feedback: {str(e)}")
+            st.error(FEEDBACK_ERROR_SAVE_FAILED.format(error=str(e)))
 
 # Sidebar
-st.sidebar.title("Frequently Asked Questions")
-faq_expander = st.sidebar.expander("Why is this feedback important?")
+st.sidebar.title(FEEDBACK_SIDEBAR_FAQ_TITLE)
+faq_expander = st.sidebar.expander(FEEDBACK_SIDEBAR_FAQ_QUESTION)
 with faq_expander:
-    st.write("Your feedback helps us continuously improve our programs and enhance the learning experience for all Aggies.")
+    st.write(FEEDBACK_SIDEBAR_FAQ_ANSWER)
 
-st.sidebar.info("Your responses are anonymous and will be used solely for program improvement purposes.")
+st.sidebar.info(FEEDBACK_SIDEBAR_INFO)
 
 # Data privacy notice
 st.sidebar.markdown("---")
-st.sidebar.subheader("Data Privacy Notice")
-st.sidebar.write("""
-We value your privacy. All responses are anonymized and securely stored. 
-The data collected will only be used for program improvement purposes and will not be shared with third parties.
-""")
+st.sidebar.subheader(FEEDBACK_SIDEBAR_PRIVACY_TITLE)
+st.sidebar.write(FEEDBACK_SIDEBAR_PRIVACY_TEXT)
 
 # Footer
 st.markdown("---")
-st.markdown("© 2025 Texas A&M University. All rights reserved.")
+st.markdown(FEEDBACK_FOOTER_COPYRIGHT)
