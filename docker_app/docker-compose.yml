@@ -8,6 +8,17 @@ services:
       context: .
     ports:
       - "8080:8501"
+    environment:
+      # AWS Configuration
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION:-us-east-1}
+      # Application Configuration
+      - STACK_NAME=${STACK_NAME:-StudentFeedback}
+      - CUSTOM_HEADER_VALUE=${CUSTOM_HEADER_VALUE:-My_random_value_58dsvasdaswcd5e4s31}
+      - CUSTOM_HEADER_NAME=${CUSTOM_HEADER_NAME:-X-Custom-Header}
+      - SECRETS_MANAGER_ID=${SECRETS_MANAGER_ID:-StudentFeedbackParamCognitoSecret12345}
+      - DEPLOYMENT_REGION=${DEPLOYMENT_REGION:-us-east-1}
+      - BEDROCK_REGION=${BEDROCK_REGION:-us-east-1}
+      - S3_BUCKET_NAME=${S3_BUCKET_NAME:-awsbin-arkansasonline-poll}
     entrypoint: streamlit run app.py
-    
-

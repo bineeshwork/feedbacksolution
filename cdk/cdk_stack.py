@@ -14,7 +14,6 @@ from aws_cdk import (
 from constructs import Construct
 from docker_app.config_file import Config
 
-CUSTOM_HEADER_NAME = "X-Custom-Header"
 
 class CdkStack(Stack):
 
@@ -145,7 +144,7 @@ class CdkStack(Stack):
         # Add ALB as CloudFront Origin
         origin = origins.LoadBalancerV2Origin(
             alb,
-            custom_headers={CUSTOM_HEADER_NAME: Config.CUSTOM_HEADER_VALUE},
+            custom_headers={Config.CUSTOM_HEADER_NAME: Config.CUSTOM_HEADER_VALUE},
             origin_shield_enabled=False,
             protocol_policy=cloudfront.OriginProtocolPolicy.HTTP_ONLY,
         )
@@ -176,7 +175,7 @@ class CdkStack(Stack):
             priority=1,
             conditions=[
                 elbv2.ListenerCondition.http_header(
-                    CUSTOM_HEADER_NAME,
+                    Config.CUSTOM_HEADER_NAME,
                     [Config.CUSTOM_HEADER_VALUE])],
             protocol=elbv2.ApplicationProtocol.HTTP,
             targets=[service],

@@ -52,7 +52,7 @@ s3 = boto3.client('s3',
 )
 
 # Get S3 bucket name from environment variable
-S3_BUCKET_NAME = "awsbin-amazonq-assets"
+S3_BUCKET_NAME = os.environ.get("S3_BUCKET_NAME", "awsbin-amazonq-assets")
 
 # Header
 col1, col2, col3 = st.columns([1,2,1])

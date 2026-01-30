@@ -49,7 +49,7 @@ date_options = [
 
 # AWS S3 Configuration
 USE_S3 = True  # Set to False to disable S3 and save locally
-S3_BUCKET_NAME = "awsbin-arkansasonline-poll"
+S3_BUCKET_NAME = os.environ.get("S3_BUCKET_NAME", "awsbin-arkansasonline-poll")
 
 # Initialize S3 Client if needed
 if USE_S3:
