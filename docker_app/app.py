@@ -6,8 +6,30 @@ import time
 import os
 from datetime import datetime
 
+from strings import (
+    ARKANSAS_PAGE_TITLE,
+    ARKANSAS_TITLE,
+    ARKANSAS_INSTRUCTIONS,
+    LABEL_FULL_NAME,
+    LABEL_EMAIL_ADDRESS,
+    LABEL_UNAVAILABLE_DATES,
+    LABEL_COMMENTS,
+    LABEL_SUBMIT_AVAILABILITY,
+    SUCCESS_AVAILABILITY_SUBMITTED,
+    ERROR_NAME_EMAIL_REQUIRED,
+    WARNING_NO_DATES_SELECTED,
+    ERROR_SUBMISSION_FAILED,
+    ERROR_S3_INIT_FAILED,
+    SPINNER_SUBMITTING,
+    SIDEBAR_ABOUT_TITLE,
+    SIDEBAR_ABOUT_TEXT,
+    SIDEBAR_ARKANSAS_PRIVACY_TITLE,
+    SIDEBAR_ARKANSAS_PRIVACY_TEXT,
+    ARKANSAS_FOOTER_TEXT,
+)
+
 # Set Streamlit page configuration
-st.set_page_config(page_title="Arkansas Scheduling Poll", layout="centered")
+st.set_page_config(page_title=ARKANSAS_PAGE_TITLE, layout="centered")
 
 # Custom styling using markdown
 st.markdown("""
@@ -61,30 +83,30 @@ if USE_S3:
             region_name=os.getenv('AWS_DEFAULT_REGION', 'us-east-1')
         )
     except Exception as e:
-        st.error(f"Failed to initialize AWS S3: {str(e)}")
+        st.error(ERROR_S3_INIT_FAILED.format(error=str(e)))
         st.stop()
 
 # Header Section
-st.title("📍 Arkansas Onsite Scheduling Poll")
-st.write("Select **any dates** below you are **not available** to travel or attend the in-person event in **Little Rock, AR**.")
+st.title(ARKANSAS_TITLE)
+st.write(ARKANSAS_INSTRUCTIONS)
 
 # Main Form
 with st.form("availability_form"):
     respondent_id = str(uuid.uuid4())[:8]
-    name = st.text_input("Full Name")
-    email = st.text_input("Email Address")
-    unavailable_dates = st.multiselect("What dates are you *NOT* available?", date_options)
+    name = st.text_input(LABEL_FULL_NAME)
+    email = st.text_input(LABEL_EMAIL_ADDRESS)
+    unavailable_dates = st.multiselect(LABEL_UNAVAILABLE_DATES, date_options)
 
-    comments = st.text_area("Optional Comments / Notes")
+    comments = st.text_area(LABEL_COMMENTS)
 
-    submit = st.form_submit_button("Submit Availability")
+    submit = st.form_submit_button(LABEL_SUBMIT_AVAILABILITY)
 
 # Handle submission
 if submit:
     if not name or not email:
-        st.error("Please provide both your name and email.")
+        st.error(ERROR_NAME_EMAIL_REQUIRED)
     elif not unavailable_dates:
-        st.warning("You haven't selected any dates. Are you available all dates?")
+        st.warning(WARNING_NO_DATES_SELECTED)
     else:
         submission = {
             "Respondent ID": respondent_id,
@@ -100,7 +122,7 @@ if submit:
 
         try:
             # Show progress bar
-            with st.spinner("Submitting your response..."):
+            with st.spinner(SPINNER_SUBMITTING):
                 filename = f"arkansas_poll_{respondent_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}.json"
 
                 if USE_S3:
@@ -114,23 +136,18 @@ if submit:
                     with open(f"./{filename}", "w") as file:
                         file.write(json_data)
 
-                st.success("✅ Your availability has been submitted!")
+                st.success(SUCCESS_AVAILABILITY_SUBMITTED)
                 st.balloons()
         except Exception as e:
-            st.error(f"❌ Submission failed: {e}")
+            st.error(ERROR_SUBMISSION_FAILED.format(error=e))
 
 # Sidebar Helper
-st.sidebar.title("ℹ️ About this Poll")
-st.sidebar.write("""
-This poll helps us schedule an in-person event based on staff availability.
-Please select any dates you are **not available**.
-""")
+st.sidebar.title(SIDEBAR_ABOUT_TITLE)
+st.sidebar.write(SIDEBAR_ABOUT_TEXT)
 st.sidebar.markdown("---")
-st.sidebar.subheader("🔒 Data Privacy Notice")
-st.sidebar.write("""
-Your responses are confidential and will only be used for internal scheduling purposes.
-""")
+st.sidebar.subheader(SIDEBAR_ARKANSAS_PRIVACY_TITLE)
+st.sidebar.write(SIDEBAR_ARKANSAS_PRIVACY_TEXT)
 
 # Footer
 st.markdown("---")
-st.caption("© 2025 State of Arkansas Event Coordination Team")
+st.caption(ARKANSAS_FOOTER_TEXT)
