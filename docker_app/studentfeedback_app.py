@@ -6,8 +6,53 @@ from datetime import datetime
 import time
 import os
 
+from constants.ui_strings import (
+    STUDENT_PAGE_TITLE,
+    STUDENT_TITLE,
+    STUDENT_DESCRIPTION,
+    STUDENT_ID_TEXT,
+    STUDENT_LABEL_PROGRAM_NAME,
+    STUDENT_HELP_PROGRAM_NAME,
+    STUDENT_LABEL_COURSE_SATISFACTION,
+    STUDENT_HELP_COURSE_SATISFACTION,
+    STUDENT_SATISFACTION_SCALE_TEXT,
+    STUDENT_LABEL_LEARNING_OUTCOMES,
+    STUDENT_HELP_LEARNING_OUTCOMES,
+    STUDENT_LABEL_SUPPORT_SERVICES,
+    STUDENT_HELP_SUPPORT_SERVICES,
+    STUDENT_LABEL_ENGAGEMENT_LEVEL,
+    STUDENT_HELP_ENGAGEMENT_LEVEL,
+    STUDENT_ENGAGEMENT_OPTIONS,
+    STUDENT_ENGAGEMENT_DEFAULT,
+    STUDENT_LABEL_IMPROVEMENT_AREAS,
+    STUDENT_HELP_IMPROVEMENT_AREAS,
+    STUDENT_IMPROVEMENT_AREA_OPTIONS,
+    STUDENT_LABEL_OPEN_FEEDBACK,
+    STUDENT_HELP_OPEN_FEEDBACK,
+    STUDENT_LABEL_FUTURE_PLANS,
+    STUDENT_HELP_FUTURE_PLANS,
+    STUDENT_FUTURE_PLANS_OPTIONS,
+    STUDENT_EXPANDER_ADDITIONAL_COMMENTS,
+    STUDENT_LABEL_STRENGTHS,
+    STUDENT_HELP_STRENGTHS,
+    STUDENT_LABEL_WEAKNESSES,
+    STUDENT_HELP_WEAKNESSES,
+    STUDENT_BUTTON_SUBMIT,
+    STUDENT_ERROR_PROGRAM_NAME_REQUIRED,
+    STUDENT_ERROR_FEEDBACK_REQUIRED,
+    STUDENT_SUCCESS_SUBMITTED,
+    STUDENT_ERROR_SAVE_FAILED,
+    STUDENT_SIDEBAR_TITLE,
+    STUDENT_FAQ_EXPANDER_TITLE,
+    STUDENT_FAQ_ANSWER,
+    STUDENT_SIDEBAR_INFO,
+    STUDENT_SIDEBAR_PRIVACY_TITLE,
+    STUDENT_SIDEBAR_PRIVACY_TEXT,
+    STUDENT_FOOTER_TEXT,
+)
+
 # Set page config
-st.set_page_config(page_title="Texas A&M Student Feedback Form", layout="wide")
+st.set_page_config(page_title=STUDENT_PAGE_TITLE, layout="wide")
 
 # Custom theme for Texas A&M
 st.markdown("""
@@ -58,44 +103,44 @@ S3_BUCKET_NAME = "awsbin-amazonq-assets"
 col1, col2, col3 = st.columns([1,2,1])
 with col2:
     st.image("./primaryTAM.png", width=300)
-st.title("Student Feedback Form")
-st.write("Your opinion matters! Help us improve our programs.")
+st.title(STUDENT_TITLE)
+st.write(STUDENT_DESCRIPTION)
 
 # Main form
 with st.form("feedback_form"):
     student_id = str(uuid.uuid4())[:8]  # Generate anonymized ID
-    st.write(f"Your anonymized Student ID: {student_id}")
+    st.write(STUDENT_ID_TEXT.format(student_id=student_id))
 
-    program_name = st.text_input("Program Name", help="Enter the full name of your academic program")
+    program_name = st.text_input(STUDENT_LABEL_PROGRAM_NAME, help=STUDENT_HELP_PROGRAM_NAME)
     
-    course_satisfaction = st.slider("Course Satisfaction", 1, 5, 3, help="Rate your overall satisfaction with the course")
-    st.write("1: Very Dissatisfied, 5: Very Satisfied")
+    course_satisfaction = st.slider(STUDENT_LABEL_COURSE_SATISFACTION, 1, 5, 3, help=STUDENT_HELP_COURSE_SATISFACTION)
+    st.write(STUDENT_SATISFACTION_SCALE_TEXT)
     
-    learning_outcomes = st.slider("Learning Outcomes Achievement", 1, 5, 3, help="How well did the course meet its stated learning objectives?")
+    learning_outcomes = st.slider(STUDENT_LABEL_LEARNING_OUTCOMES, 1, 5, 3, help=STUDENT_HELP_LEARNING_OUTCOMES)
     
-    support_services = st.slider("Support Services Rating", 1, 5, 3, help="Rate the quality of support services provided")
+    support_services = st.slider(STUDENT_LABEL_SUPPORT_SERVICES, 1, 5, 3, help=STUDENT_HELP_SUPPORT_SERVICES)
     
-    engagement_level = st.select_slider("Engagement Level", options=["Low", "Medium", "High"], value="Medium", help="How engaged were you in the course activities?")
+    engagement_level = st.select_slider(STUDENT_LABEL_ENGAGEMENT_LEVEL, options=STUDENT_ENGAGEMENT_OPTIONS, value=STUDENT_ENGAGEMENT_DEFAULT, help=STUDENT_HELP_ENGAGEMENT_LEVEL)
     
-    improvement_areas = st.multiselect("Areas for Improvement", 
-        ["Course Content", "Teaching Methods", "Assessment", "Resources", "Support Services"],
-        help="Select all areas where you think improvements can be made")
+    improvement_areas = st.multiselect(STUDENT_LABEL_IMPROVEMENT_AREAS, 
+        STUDENT_IMPROVEMENT_AREA_OPTIONS,
+        help=STUDENT_HELP_IMPROVEMENT_AREAS)
     
-    feedback = st.text_area("Open-ended Feedback", help="Please provide any additional comments or suggestions")
+    feedback = st.text_area(STUDENT_LABEL_OPEN_FEEDBACK, help=STUDENT_HELP_OPEN_FEEDBACK)
     
-    future_plans = st.selectbox("Future Plans", ["Continue", "Transfer", "Undecided"], help="What are your plans for the next academic term?")
+    future_plans = st.selectbox(STUDENT_LABEL_FUTURE_PLANS, STUDENT_FUTURE_PLANS_OPTIONS, help=STUDENT_HELP_FUTURE_PLANS)
 
-    with st.expander("Additional Comments"):
-        strengths = st.text_area("Program Strengths", help="What aspects of the program do you find most valuable?")
-        weaknesses = st.text_area("Areas for Enhancement", help="What aspects of the program could be improved?")
+    with st.expander(STUDENT_EXPANDER_ADDITIONAL_COMMENTS):
+        strengths = st.text_area(STUDENT_LABEL_STRENGTHS, help=STUDENT_HELP_STRENGTHS)
+        weaknesses = st.text_area(STUDENT_LABEL_WEAKNESSES, help=STUDENT_HELP_WEAKNESSES)
 
-    submitted = st.form_submit_button("Submit Feedback")
+    submitted = st.form_submit_button(STUDENT_BUTTON_SUBMIT)
 
 if submitted:
     if not program_name:
-        st.error("Please enter your program name.")
+        st.error(STUDENT_ERROR_PROGRAM_NAME_REQUIRED)
     elif not feedback:
-        st.error("Please provide some feedback in the open-ended section.")
+        st.error(STUDENT_ERROR_FEEDBACK_REQUIRED)
     else:
         feedback_data = {
             "Student ID": student_id,
@@ -131,27 +176,24 @@ if submitted:
                 Key=filename,
                 Body=feedback_json
             )
-            st.success("Thank you! Your feedback has been submitted successfully.")
+            st.success(STUDENT_SUCCESS_SUBMITTED)
             st.balloons()
         except Exception as e:
-            st.error(f"An error occurred while saving your feedback: {str(e)}")
+            st.error(STUDENT_ERROR_SAVE_FAILED.format(error=str(e)))
 
 # Sidebar
-st.sidebar.title("Frequently Asked Questions")
-faq_expander = st.sidebar.expander("Why is this feedback important?")
+st.sidebar.title(STUDENT_SIDEBAR_TITLE)
+faq_expander = st.sidebar.expander(STUDENT_FAQ_EXPANDER_TITLE)
 with faq_expander:
-    st.write("Your feedback helps us continuously improve our programs and enhance the learning experience for all Aggies.")
+    st.write(STUDENT_FAQ_ANSWER)
 
-st.sidebar.info("Your responses are anonymous and will be used solely for program improvement purposes.")
+st.sidebar.info(STUDENT_SIDEBAR_INFO)
 
 # Data privacy notice
 st.sidebar.markdown("---")
-st.sidebar.subheader("Data Privacy Notice")
-st.sidebar.write("""
-We value your privacy. All responses are anonymized and securely stored. 
-The data collected will only be used for program improvement purposes and will not be shared with third parties.
-""")
+st.sidebar.subheader(STUDENT_SIDEBAR_PRIVACY_TITLE)
+st.sidebar.write(STUDENT_SIDEBAR_PRIVACY_TEXT)
 
 # Footer
 st.markdown("---")
-st.markdown("© 2025 Texas A&M University. All rights reserved.")
+st.markdown(STUDENT_FOOTER_TEXT)

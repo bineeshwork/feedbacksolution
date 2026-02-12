@@ -6,8 +6,30 @@ import time
 import os
 from datetime import datetime
 
+from constants.ui_strings import (
+    ARKANSAS_PAGE_TITLE,
+    ARKANSAS_TITLE,
+    ARKANSAS_INSTRUCTION_TEXT,
+    ARKANSAS_LABEL_FULL_NAME,
+    ARKANSAS_LABEL_EMAIL,
+    ARKANSAS_LABEL_UNAVAILABLE_DATES,
+    ARKANSAS_LABEL_COMMENTS,
+    ARKANSAS_BUTTON_SUBMIT,
+    ARKANSAS_ERROR_NAME_EMAIL_REQUIRED,
+    ARKANSAS_WARNING_NO_DATES_SELECTED,
+    ARKANSAS_SPINNER_SUBMITTING,
+    ARKANSAS_SUCCESS_SUBMITTED,
+    ARKANSAS_ERROR_SUBMISSION_FAILED,
+    ARKANSAS_ERROR_S3_INIT_FAILED,
+    ARKANSAS_SIDEBAR_TITLE,
+    ARKANSAS_SIDEBAR_DESCRIPTION,
+    ARKANSAS_SIDEBAR_PRIVACY_TITLE,
+    ARKANSAS_SIDEBAR_PRIVACY_TEXT,
+    ARKANSAS_FOOTER_TEXT,
+)
+
 # Set Streamlit page configuration
-st.set_page_config(page_title="Arkansas Scheduling Poll", layout="centered")
+st.set_page_config(page_title=ARKANSAS_PAGE_TITLE, layout="centered")
 
 # Custom styling using markdown
 st.markdown("""
@@ -61,30 +83,30 @@ if USE_S3:
             region_name=os.getenv('AWS_DEFAULT_REGION', 'us-east-1')
         )
     except Exception as e:
-        st.error(f"Failed to initialize AWS S3: {str(e)}")
+        st.error(ARKANSAS_ERROR_S3_INIT_FAILED.format(error=str(e)))
         st.stop()
 
 # Header Section
-st.title("📍 Arkansas Onsite Scheduling Poll")
-st.write("Select **any dates** below you are **not available** to travel or attend the in-person event in **Little Rock, AR**.")
+st.title(ARKANSAS_TITLE)
+st.write(ARKANSAS_INSTRUCTION_TEXT)
 
 # Main Form
 with st.form("availability_form"):
     respondent_id = str(uuid.uuid4())[:8]
-    name = st.text_input("Full Name")
-    email = st.text_input("Email Address")
-    unavailable_dates = st.multiselect("What dates are you *NOT* available?", date_options)
+    name = st.text_input(ARKANSAS_LABEL_FULL_NAME)
+    email = st.text_input(ARKANSAS_LABEL_EMAIL)
+    unavailable_dates = st.multiselect(ARKANSAS_LABEL_UNAVAILABLE_DATES, date_options)
 
-    comments = st.text_area("Optional Comments / Notes")
+    comments = st.text_area(ARKANSAS_LABEL_COMMENTS)
 
-    submit = st.form_submit_button("Submit Availability")
+    submit = st.form_submit_button(ARKANSAS_BUTTON_SUBMIT)
 
 # Handle submission
 if submit:
     if not name or not email:
-        st.error("Please provide both your name and email.")
+        st.error(ARKANSAS_ERROR_NAME_EMAIL_REQUIRED)
     elif not unavailable_dates:
-        st.warning("You haven't selected any dates. Are you available all dates?")
+        st.warning(ARKANSAS_WARNING_NO_DATES_SELECTED)
     else:
         submission = {
             "Respondent ID": respondent_id,
@@ -100,7 +122,7 @@ if submit:
 
         try:
             # Show progress bar
-            with st.spinner("Submitting your response..."):
+            with st.spinner(ARKANSAS_SPINNER_SUBMITTING):
                 filename = f"arkansas_poll_{respondent_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}.json"
 
                 if USE_S3:
@@ -114,23 +136,18 @@ if submit:
                     with open(f"./{filename}", "w") as file:
                         file.write(json_data)
 
-                st.success("✅ Your availability has been submitted!")
+                st.success(ARKANSAS_SUCCESS_SUBMITTED)
                 st.balloons()
         except Exception as e:
-            st.error(f"❌ Submission failed: {e}")
+            st.error(ARKANSAS_ERROR_SUBMISSION_FAILED.format(error=e))
 
 # Sidebar Helper
-st.sidebar.title("ℹ️ About this Poll")
-st.sidebar.write("""
-This poll helps us schedule an in-person event based on staff availability.
-Please select any dates you are **not available**.
-""")
+st.sidebar.title(ARKANSAS_SIDEBAR_TITLE)
+st.sidebar.write(ARKANSAS_SIDEBAR_DESCRIPTION)
 st.sidebar.markdown("---")
-st.sidebar.subheader("🔒 Data Privacy Notice")
-st.sidebar.write("""
-Your responses are confidential and will only be used for internal scheduling purposes.
-""")
+st.sidebar.subheader(ARKANSAS_SIDEBAR_PRIVACY_TITLE)
+st.sidebar.write(ARKANSAS_SIDEBAR_PRIVACY_TEXT)
 
 # Footer
 st.markdown("---")
-st.caption("© 2025 State of Arkansas Event Coordination Team")
+st.caption(ARKANSAS_FOOTER_TEXT)
