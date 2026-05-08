@@ -1,51 +1,183 @@
-# deploy-streamlit-app
+# Student Feedback and Scheduling Solution
 
-This app can be used as a starting point to easily create and deploy a GenAI demo, with web interface and user authentication. It is written in python only, with cdk template to deploy on AWS.
+This project contains two Streamlit-based web applications deployed on AWS infrastructure using CDK:
 
-It deploys a basic Streamlit app, and contains the following components:
+1. **Texas A&M Student Feedback Form** - Collects structured student feedback for academic programs
+2. **Arkansas Onsite Scheduling Poll** - Manages scheduling availability for an onsite event in Little Rock, AR
 
-* The Streamlit app in ECS/Fargate, behind an ALB and CloudFront
-* A Cognito user pool in which you can manage users
+Both applications are deployed as containerized services with user authentication and cloud storage.
 
-By default, the Streamlit app has the following features:
+## Architecture
 
-* Authentication through Cognito
-* Connection to Bedrock 
+The solution deploys the following components:
 
-## Architecture diagram
+* Streamlit applications running in ECS/Fargate, behind an ALB and CloudFront
+* A Cognito user pool for user authentication
+* S3 buckets for storing form submissions
+* Amazon Bedrock integration for generative AI capabilities
 
 ![Architecture diagram](img/archi_streamlit_cdk.png)
 
+## Applications
+
+### Student Feedback Form (`docker_app/studentfeedback_app.py`)
+
+A Texas A&M University branded feedback collection form designed to gather structured student feedback for academic programs.
+
+#### Branding and Styling
+
+* Custom CSS with maroon theme (`#500000`)
+* Uses Oswald, Work Sans, and Open Sans font families
+* Includes the official Texas A&M logo (`primaryTAM.png`)
+
+#### Form Fields
+
+| Field | Type | Details |
+|-------|------|---------|
+| Program Name | Text input | Required |
+| Course Satisfaction | Slider (1-5) | 1 = Very Dissatisfied, 5 = Very Satisfied |
+| Learning Outcomes Achievement | Slider (1-5) | Rates how well learning outcomes were met |
+| Support Services Rating | Slider (1-5) | Rates available support services |
+| Engagement Level | Select slider | Options: Low, Medium, High |
+| Areas for Improvement | Multiselect | Options: Course Content, Teaching Methods, Assessment, Resources, Support Services |
+| Open-ended Feedback | Text area | Required |
+| Future Plans | Selectbox | Options: Continue, Transfer, Undecided |
+| Program Strengths | Expandable text area | Optional |
+| Areas for Enhancement | Expandable text area | Optional |
+
+#### Validation and Submission
+
+* Requires program name and open-ended feedback before submission
+* Generates an anonymized student ID (UUID-based) for each submission
+* Displays a progress bar during submission
+* Shows a balloons animation on successful submission
+
+#### Data Storage
+
+* Stores feedback as JSON in S3 bucket `awsbin-amazonq-assets`
+* File naming convention: `feedback_{student_id}_{timestamp}.txt`
+* Uses boto3 S3 client with credentials from environment variables (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_DEFAULT_REGION`)
+
+#### Additional Features
+
+* Sidebar with FAQ section and data privacy notice
+* Anonymous and confidential data handling
+
+---
+
+### Arkansas Onsite Scheduling Poll (`docker_app/app.py`)
+
+A scheduling poll that helps coordinate an in-person event in Little Rock, AR by collecting staff availability based on dates they are NOT available.
+
+#### Branding and Styling
+
+* Custom CSS with maroon theme (`#500000`)
+
+#### Form Fields
+
+| Field | Type | Details |
+|-------|------|---------|
+| Full Name | Text input | Required |
+| Email Address | Text input | Required |
+| Unavailable Dates | Multiselect | All weekdays from August 4 through October 17 |
+| Comments/Notes | Text area | Optional |
+
+#### Validation and Submission
+
+* Requires name and email before submission
+* Warns if no dates are selected
+* Generates a unique respondent ID (UUID-based)
+* Displays a progress bar during submission
+* Shows a balloons animation on successful submission
+
+#### Data Storage
+
+* Supports both S3 storage and local file storage (configurable via `USE_S3` flag)
+* S3 storage: bucket `awsbin-arkansasonline-poll`, path `scheduling/arkansas_poll_{id}_{timestamp}.json`
+* Uses boto3 with credentials from environment variables (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_DEFAULT_REGION`)
+
+#### Additional Features
+
+* Sidebar with "About this Poll" information and data privacy notice
+* Confidential data handling
+
+---
+
+### Common Features
+
+Both applications share the following characteristics:
+
+* **Framework**: Streamlit-based web interface
+* **Data Persistence**: AWS S3 for cloud storage
+* **Data Format**: JSON for all stored submissions
+* **Progress Indicators**: Visual progress bars during form submission
+* **Success Feedback**: Balloons animation on successful submission
+* **Sidebar Content**: FAQ/informational panels and privacy notices
+* **Privacy**: Anonymous or confidential data handling
+* **Theming**: Custom CSS with maroon color scheme
+
+## Project Structure
+
+```
+.
+├── app.py                      # CDK app entry point
+├── cdk/
+│   └── cdk_stack.py            # CDK infrastructure stack
+├── cdk.json                    # CDK configuration
+├── docker_app/
+│   ├── app.py                  # Arkansas Scheduling Poll (Streamlit)
+│   ├── studentfeedback_app.py  # Student Feedback Form (Streamlit)
+│   ├── config_file.py          # Application configuration
+│   ├── Dockerfile              # Container configuration
+│   ├── docker-compose.yml      # Docker Compose config
+│   ├── requirements.txt        # App Python dependencies
+│   ├── primaryTAM.png          # Texas A&M logo
+│   └── utils/
+│       ├── auth.py             # Authentication utilities
+│       └── llm.py              # Bedrock LLM utilities
+├── img/                        # Architecture diagrams
+├── tests/                      # Unit tests
+├── requirements.txt            # CDK/deployment dependencies
+└── requirements-dev.txt        # Dev dependencies
+```
+
+## Configuration
+
+The application configuration is in `docker_app/config_file.py`:
+
+* `STACK_NAME` = "StudentFeedback"
+* `DEPLOYMENT_REGION` = "us-east-1"
+* `BEDROCK_REGION` = "us-east-1"
+* Cognito authentication via AWS Secrets Manager
+
 ## Usage
 
-In the docker_app folder, you will find the streamlit app. You can run it locally or with docker.
+### Prerequisites
 
-Note: for the docker version to run, you will need to give appropriate permissions to the container for bedrock access. This is not implemented yet.
-
-In the main folder, you will find a cdk template to deploy the app on ECS / ALB.
-
-Prerequisites:
-
-* python >= 3.8
-* docker
-* use a Chrome browser for development
+* Python >= 3.8
+* Docker
+* AWS CLI configured with appropriate credentials
+* AWS CDK installed
 * `anthropic.claude-v2` model activated in Amazon Bedrock in your AWS account
-* the environment used to create this demo was an AWS Cloud9 m5.large instance with Amazon Linux 2023, but it should also work with other configurations. It has also been tested on a mac laptop with colima as container runtime.
-* You also need to install the AWS Command Line Interface (CLI), the AWS Cloud Development KIT (CDK), and to configure the AWS CLI on your development environment (not required if you use Cloud9, as it is already configured by default). One way to configure the AWS CLI is to get your access key through the AWS console, and use the `aws configure` command in your terminal to setup your credentials.
+* A Chrome browser is recommended for development
 
-To deploy:
+The environment used to create this demo was an AWS Cloud9 m5.large instance with Amazon Linux 2023, but it should also work with other configurations. It has also been tested on a Mac laptop with colima as container runtime.
 
-1. Edit `docker_app/config_file.py`, choose a `STACK_NAME` and a `CUSTOM_HEADER_VALUE`.
+You also need to install the AWS Command Line Interface (CLI), the AWS Cloud Development Kit (CDK), and configure the AWS CLI on your development environment (not required if you use Cloud9, as it is already configured by default).
 
-2. Install dependencies
- 
+### Deployment
+
+1. Edit `docker_app/config_file.py` to update configuration as needed (stack name, regions, secrets).
+
+2. Install dependencies:
+
 ```
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-3. Deploy the cdk template
+3. Deploy the CDK template:
 
 ```
 cdk bootstrap
@@ -57,24 +189,21 @@ The deployment takes 5 to 10 minutes.
 Make a note of the output, in which you will find the CloudFront distribution URL
 and the Cognito user pool id.
 
-4. Create a user in the Cognito UserPool that has been created. You can perform this action from your AWS Console. 
-5. From your browser, connect to the CloudFront distribution url.
+4. Create a user in the Cognito UserPool that has been created. You can perform this action from your AWS Console.
+5. From your browser, connect to the CloudFront distribution URL.
 6. Log in to the Streamlit app with the user you have created in Cognito.
 
-## Testing and developing in Cloud9
+### Running Locally
 
-After deployment of the cdk template containing the Cognito user pool required for authentication, you can test the Streamlit app directly from Cloud9.
-You can either use docker, but this would require setting up a role with appropriate permissions, or run the Streamlit app directly in your terminal after having installed the required python dependencies.
+After deployment of the CDK template (which creates the Cognito user pool required for authentication), you can test the Streamlit apps directly.
 
-To run the Streamlit app directly:
-
-1. If you have activated a virtual env for deploying the cdk template, deactivate it:
+1. If you have activated a virtual env for deploying the CDK template, deactivate it:
 
 ```
 deactivate
 ```
 
-2. cd into the streamlit-docker directory, create a new virtual env, and install dependencies:
+2. Change into the docker_app directory, create a new virtual env, and install dependencies:
 
 ```
 cd docker_app
@@ -83,18 +212,21 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-3. Launch the streamlit server
+3. Launch the scheduling poll app:
 
 ```
 streamlit run app.py --server.port 8080
 ```
 
-4. Click on the Preview/Preview running application button in Cloud9, and click on the button to Pop out the browser in a new window, as the Cloud9 embedded browser does not keep session cookies, which prevents the authentication mechanism to work properly.
-If the new window does not display the app, you may need to configure your browser to accept cross-site tracking cookies.
+Or launch the student feedback app:
 
-5. You can now modify the streamlit app to build your own demo!
+```
+streamlit run studentfeedback_app.py --server.port 8080
+```
 
-## Some limitations
+4. If using Cloud9, click on the Preview/Preview running application button, and pop out the browser in a new window (the embedded browser does not keep session cookies, which prevents authentication from working properly).
+
+## Some Limitations
 
 * The connection between CloudFront and the ALB is in HTTP, not SSL encrypted.
 This means traffic between CloudFront and the ALB is unencrypted.
