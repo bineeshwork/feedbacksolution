@@ -6,50 +6,41 @@ import time
 import os
 from datetime import datetime
 
+from constants import (
+    SCHEDULING_POLL_PAGE_TITLE,
+    SCHEDULING_POLL_CSS,
+    SCHEDULING_POLL_DATE_OPTIONS,
+    SCHEDULING_POLL_S3_BUCKET_NAME,
+    SCHEDULING_POLL_TITLE,
+    SCHEDULING_POLL_INSTRUCTIONS,
+    SCHEDULING_POLL_FORM_KEY,
+    SCHEDULING_POLL_NAME_LABEL,
+    SCHEDULING_POLL_EMAIL_LABEL,
+    SCHEDULING_POLL_DATES_LABEL,
+    SCHEDULING_POLL_COMMENTS_LABEL,
+    SCHEDULING_POLL_SUBMIT_LABEL,
+    SCHEDULING_POLL_ERROR_NAME_EMAIL,
+    SCHEDULING_POLL_WARNING_NO_DATES,
+    SCHEDULING_POLL_SUBMIT_SPINNER,
+    SCHEDULING_POLL_SUCCESS_MESSAGE,
+    SCHEDULING_POLL_ERROR_S3_INIT,
+    SCHEDULING_POLL_ERROR_SUBMIT,
+    SCHEDULING_POLL_SIDEBAR_TITLE,
+    SCHEDULING_POLL_SIDEBAR_DESCRIPTION,
+    SCHEDULING_POLL_SIDEBAR_PRIVACY_TITLE,
+    SCHEDULING_POLL_SIDEBAR_PRIVACY_TEXT,
+    SCHEDULING_POLL_FOOTER,
+)
+
 # Set Streamlit page configuration
-st.set_page_config(page_title="Arkansas Scheduling Poll", layout="centered")
+st.set_page_config(page_title=SCHEDULING_POLL_PAGE_TITLE, layout="centered")
 
 # Custom styling using markdown
-st.markdown("""
-<style>
-    .main .block-container {
-        padding-top: 2rem;
-        padding-bottom: 2rem;
-        max-width: 800px;
-    }
-    h1, h2, h3 {
-        font-family: 'Oswald', sans-serif;
-        color: #500000;
-    }
-    .stButton > button {
-        background-color: #500000;
-        color: white;
-        font-weight: bold;
-    }
-    .stTextInput > div > input {
-        font-family: 'Open Sans', sans-serif;
-    }
-</style>
-""", unsafe_allow_html=True)
-
-# 📅 DATE OPTIONS
-date_options = [
-    "Monday, Aug 4", "Tuesday, Aug 5", "Wednesday, Aug 6", "Thursday, Aug 7", "Friday, Aug 8",
-    "Monday, Aug 11", "Tuesday, Aug 12", "Wednesday, Aug 13", "Thursday, Aug 14", "Friday, Aug 15",
-    "Monday, Aug 18", "Tuesday, Aug 19", "Wednesday, Aug 20", "Thursday, Aug 21", "Friday, Aug 22",
-    "Monday, Aug 25", "Tuesday, Aug 26", "Wednesday, Aug 27", "Thursday, Aug 28", "Friday, Aug 29",
-    "Tuesday, Sep 2", "Wednesday, Sep 3", "Thursday, Sep 4", "Friday, Sep 5",
-    "Monday, Sep 8", "Tuesday, Sep 9", "Wednesday, Sep 10", "Thursday, Sep 11", "Friday, Sep 12",
-    "Monday, Sep 15", "Tuesday, Sep 16", "Wednesday, Sep 17", "Thursday, Sep 18", "Friday, Sep 19",
-    "Monday, Sep 22", "Tuesday, Sep 23", "Wednesday, Sep 24", "Thursday, Sep 25", "Friday, Sep 26",
-    "Monday, Sep 29", "Tuesday, Sep 30", "Wednesday, Oct 1", "Thursday, Oct 2", "Friday, Oct 3",
-    "Monday, Oct 6", "Tuesday, Oct 7", "Wednesday, Oct 8", "Thursday, Oct 9", "Friday, Oct 10",
-    "Monday, Oct 13", "Tuesday, Oct 14", "Wednesday, Oct 15", "Thursday, Oct 16", "Friday, Oct 17"
-]
+st.markdown(SCHEDULING_POLL_CSS, unsafe_allow_html=True)
 
 # AWS S3 Configuration
 USE_S3 = True  # Set to False to disable S3 and save locally
-S3_BUCKET_NAME = "awsbin-arkansasonline-poll"
+S3_BUCKET_NAME = SCHEDULING_POLL_S3_BUCKET_NAME
 
 # Initialize S3 Client if needed
 if USE_S3:
@@ -61,30 +52,30 @@ if USE_S3:
             region_name=os.getenv('AWS_DEFAULT_REGION', 'us-east-1')
         )
     except Exception as e:
-        st.error(f"Failed to initialize AWS S3: {str(e)}")
+        st.error(SCHEDULING_POLL_ERROR_S3_INIT.format(error=str(e)))
         st.stop()
 
 # Header Section
-st.title("📍 Arkansas Onsite Scheduling Poll")
-st.write("Select **any dates** below you are **not available** to travel or attend the in-person event in **Little Rock, AR**.")
+st.title(SCHEDULING_POLL_TITLE)
+st.write(SCHEDULING_POLL_INSTRUCTIONS)
 
 # Main Form
-with st.form("availability_form"):
+with st.form(SCHEDULING_POLL_FORM_KEY):
     respondent_id = str(uuid.uuid4())[:8]
-    name = st.text_input("Full Name")
-    email = st.text_input("Email Address")
-    unavailable_dates = st.multiselect("What dates are you *NOT* available?", date_options)
+    name = st.text_input(SCHEDULING_POLL_NAME_LABEL)
+    email = st.text_input(SCHEDULING_POLL_EMAIL_LABEL)
+    unavailable_dates = st.multiselect(SCHEDULING_POLL_DATES_LABEL, SCHEDULING_POLL_DATE_OPTIONS)
 
-    comments = st.text_area("Optional Comments / Notes")
+    comments = st.text_area(SCHEDULING_POLL_COMMENTS_LABEL)
 
-    submit = st.form_submit_button("Submit Availability")
+    submit = st.form_submit_button(SCHEDULING_POLL_SUBMIT_LABEL)
 
 # Handle submission
 if submit:
     if not name or not email:
-        st.error("Please provide both your name and email.")
+        st.error(SCHEDULING_POLL_ERROR_NAME_EMAIL)
     elif not unavailable_dates:
-        st.warning("You haven't selected any dates. Are you available all dates?")
+        st.warning(SCHEDULING_POLL_WARNING_NO_DATES)
     else:
         submission = {
             "Respondent ID": respondent_id,
@@ -100,7 +91,7 @@ if submit:
 
         try:
             # Show progress bar
-            with st.spinner("Submitting your response..."):
+            with st.spinner(SCHEDULING_POLL_SUBMIT_SPINNER):
                 filename = f"arkansas_poll_{respondent_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}.json"
 
                 if USE_S3:
@@ -114,23 +105,18 @@ if submit:
                     with open(f"./{filename}", "w") as file:
                         file.write(json_data)
 
-                st.success("✅ Your availability has been submitted!")
+                st.success(SCHEDULING_POLL_SUCCESS_MESSAGE)
                 st.balloons()
         except Exception as e:
-            st.error(f"❌ Submission failed: {e}")
+            st.error(SCHEDULING_POLL_ERROR_SUBMIT.format(error=e))
 
 # Sidebar Helper
-st.sidebar.title("ℹ️ About this Poll")
-st.sidebar.write("""
-This poll helps us schedule an in-person event based on staff availability.
-Please select any dates you are **not available**.
-""")
+st.sidebar.title(SCHEDULING_POLL_SIDEBAR_TITLE)
+st.sidebar.write(SCHEDULING_POLL_SIDEBAR_DESCRIPTION)
 st.sidebar.markdown("---")
-st.sidebar.subheader("🔒 Data Privacy Notice")
-st.sidebar.write("""
-Your responses are confidential and will only be used for internal scheduling purposes.
-""")
+st.sidebar.subheader(SCHEDULING_POLL_SIDEBAR_PRIVACY_TITLE)
+st.sidebar.write(SCHEDULING_POLL_SIDEBAR_PRIVACY_TEXT)
 
 # Footer
 st.markdown("---")
-st.caption("© 2025 State of Arkansas Event Coordination Team")
+st.caption(SCHEDULING_POLL_FOOTER)

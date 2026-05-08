@@ -1,6 +1,14 @@
 import boto3
 import json
 
+from constants import (
+    LLM_MODEL_ID,
+    LLM_MAX_TOKENS,
+    LLM_TEMPERATURE,
+    LLM_ACCEPT_TYPE,
+    LLM_CONTENT_TYPE,
+)
+
 
 class Llm:
 
@@ -21,19 +29,16 @@ class Llm:
         prompt = f"""\n\nHuman: {input_text}
                     \n\nAssistant:"""
 
-        model_id = "anthropic.claude-v2"
         body = {
             "prompt": prompt,
-            "max_tokens_to_sample": 4096,
-            "temperature": 0.,
+            "max_tokens_to_sample": LLM_MAX_TOKENS,
+            "temperature": LLM_TEMPERATURE,
         }
         body = json.dumps(body)
-        accept = 'application/json'
-        contentType = 'application/json'
 
         # Make the API call to Bedrock
         response = self.bedrock_client.invoke_model(
-            body=body, modelId=model_id, accept=accept, contentType=contentType
+            body=body, modelId=LLM_MODEL_ID, accept=LLM_ACCEPT_TYPE, contentType=LLM_CONTENT_TYPE
         )
 
         return response
