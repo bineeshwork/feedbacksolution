@@ -1,13 +1,22 @@
 import boto3
 import json
 
-from constants import (
-    LLM_MODEL_ID,
-    LLM_MAX_TOKENS,
-    LLM_TEMPERATURE,
-    LLM_ACCEPT_TYPE,
-    LLM_CONTENT_TYPE,
-)
+try:
+    from constants import (
+        LLM_MODEL_ID,
+        LLM_MAX_TOKENS,
+        LLM_TEMPERATURE,
+        LLM_ACCEPT_TYPE,
+        LLM_CONTENT_TYPE,
+    )
+except ImportError:
+    from docker_app.constants import (
+        LLM_MODEL_ID,
+        LLM_MAX_TOKENS,
+        LLM_TEMPERATURE,
+        LLM_ACCEPT_TYPE,
+        LLM_CONTENT_TYPE,
+    )
 
 
 class Llm:
