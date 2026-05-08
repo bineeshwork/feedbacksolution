@@ -1,4 +1,11 @@
 #!/usr/bin/env python3
+"""CDK application entry point for the Student Feedback solution.
+
+This module serves as the main entry point for the AWS CDK application.
+It instantiates the CDK app and synthesizes the CloudFormation template
+for the Student Feedback stack, using configuration values defined in
+the Config class to determine the stack name and deployment region.
+"""
 import os
 
 import aws_cdk_lib as cdk
@@ -6,7 +13,7 @@ import aws_cdk_lib as cdk
 from cdk.cdk_stack import CdkStack
 from docker_app.config_file import Config
 
-
+# Initialize the CDK application and create the main stack
 app = cdk.App()
 CdkStack(app, Config.STACK_NAME,
     # If you don't specify 'env', this stack will be environment-agnostic.
@@ -28,4 +35,5 @@ CdkStack(app, Config.STACK_NAME,
     env=cdk.Environment(region=Config.DEPLOYMENT_REGION)
     )
 
+# Synthesize the CloudFormation template
 app.synth()

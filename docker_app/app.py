@@ -1,3 +1,11 @@
+"""Arkansas Scheduling Poll Streamlit application.
+
+This module implements a Streamlit-based web form for collecting staff
+availability for scheduling an in-person event in Little Rock, Arkansas.
+Respondents select dates they are NOT available, and submissions are
+stored as JSON files in an AWS S3 bucket (or locally as a fallback).
+"""
+
 import streamlit as st
 import json
 import boto3
@@ -6,10 +14,10 @@ import time
 import os
 from datetime import datetime
 
-# Set Streamlit page configuration
+# Set Streamlit page configuration (must be the first Streamlit command)
 st.set_page_config(page_title="Arkansas Scheduling Poll", layout="centered")
 
-# Custom styling using markdown
+# Custom styling using markdown to apply Texas A&M branding colors and fonts
 st.markdown("""
 <style>
     .main .block-container {
@@ -32,7 +40,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 📅 DATE OPTIONS
+# Available date options spanning August through October for scheduling
 date_options = [
     "Monday, Aug 4", "Tuesday, Aug 5", "Wednesday, Aug 6", "Thursday, Aug 7", "Friday, Aug 8",
     "Monday, Aug 11", "Tuesday, Aug 12", "Wednesday, Aug 13", "Thursday, Aug 14", "Friday, Aug 15",
@@ -48,10 +56,10 @@ date_options = [
 ]
 
 # AWS S3 Configuration
-USE_S3 = True  # Set to False to disable S3 and save locally
+USE_S3 = True  # Set to False to disable S3 and save locally instead
 S3_BUCKET_NAME = "awsbin-arkansasonline-poll"
 
-# Initialize S3 Client if needed
+# Initialize S3 Client if S3 storage is enabled
 if USE_S3:
     try:
         s3 = boto3.client(
@@ -65,11 +73,12 @@ if USE_S3:
         st.stop()
 
 # Header Section
-st.title("📍 Arkansas Onsite Scheduling Poll")
+st.title("Arkansas Onsite Scheduling Poll")
 st.write("Select **any dates** below you are **not available** to travel or attend the in-person event in **Little Rock, AR**.")
 
-# Main Form
+# Main Form - collects respondent info and unavailable dates
 with st.form("availability_form"):
+    # Generate a unique anonymous respondent ID
     respondent_id = str(uuid.uuid4())[:8]
     name = st.text_input("Full Name")
     email = st.text_input("Email Address")
@@ -79,13 +88,14 @@ with st.form("availability_form"):
 
     submit = st.form_submit_button("Submit Availability")
 
-# Handle submission
+# Handle form submission and validation
 if submit:
     if not name or not email:
         st.error("Please provide both your name and email.")
     elif not unavailable_dates:
         st.warning("You haven't selected any dates. Are you available all dates?")
     else:
+        # Build the submission payload with all form data and metadata
         submission = {
             "Respondent ID": respondent_id,
             "Name": name,
@@ -95,42 +105,44 @@ if submit:
             "Submitted At": datetime.now().isoformat()
         }
 
-        # Convert to JSON string
+        # Convert to JSON string for storage
         json_data = json.dumps(submission, indent=2)
 
         try:
-            # Show progress bar
+            # Show progress indicator while saving
             with st.spinner("Submitting your response..."):
+                # Generate a unique filename using respondent ID and timestamp
                 filename = f"arkansas_poll_{respondent_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}.json"
 
                 if USE_S3:
+                    # Upload to S3 under the scheduling/ prefix
                     s3.put_object(
                         Bucket=S3_BUCKET_NAME,
                         Key=f"scheduling/{filename}",
                         Body=json_data
                     )
                 else:
-                    # Save locally
+                    # Fallback: save locally when S3 is disabled
                     with open(f"./{filename}", "w") as file:
                         file.write(json_data)
 
-                st.success("✅ Your availability has been submitted!")
+                st.success("Your availability has been submitted!")
                 st.balloons()
         except Exception as e:
-            st.error(f"❌ Submission failed: {e}")
+            st.error(f"Submission failed: {e}")
 
-# Sidebar Helper
-st.sidebar.title("ℹ️ About this Poll")
+# Sidebar - provides context about the poll
+st.sidebar.title("About this Poll")
 st.sidebar.write("""
 This poll helps us schedule an in-person event based on staff availability.
 Please select any dates you are **not available**.
 """)
 st.sidebar.markdown("---")
-st.sidebar.subheader("🔒 Data Privacy Notice")
+st.sidebar.subheader("Data Privacy Notice")
 st.sidebar.write("""
 Your responses are confidential and will only be used for internal scheduling purposes.
 """)
 
 # Footer
 st.markdown("---")
-st.caption("© 2025 State of Arkansas Event Coordination Team")
+st.caption("2025 State of Arkansas Event Coordination Team")
