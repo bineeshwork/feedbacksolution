@@ -22,29 +22,99 @@ The solution deploys the following components:
 
 ### Student Feedback Form (`docker_app/studentfeedback_app.py`)
 
-A Texas A&M branded feedback collection form that captures:
+A Texas A&M University branded feedback collection form designed to gather structured student feedback for academic programs.
 
-* Program name
-* Course satisfaction (1-5 scale)
-* Learning outcomes
-* Support services
-* Engagement level
-* Improvement areas
-* Open-ended feedback
-* Future plans
-* Strengths and weaknesses
+#### Branding and Styling
 
-Responses are stored as JSON in the S3 bucket `awsbin-amazonq-assets`.
+* Custom CSS with maroon theme (`#500000`)
+* Uses Oswald, Work Sans, and Open Sans font families
+* Includes the official Texas A&M logo (`primaryTAM.png`)
+
+#### Form Fields
+
+| Field | Type | Details |
+|-------|------|---------|
+| Program Name | Text input | Required |
+| Course Satisfaction | Slider (1-5) | 1 = Very Dissatisfied, 5 = Very Satisfied |
+| Learning Outcomes Achievement | Slider (1-5) | Rates how well learning outcomes were met |
+| Support Services Rating | Slider (1-5) | Rates available support services |
+| Engagement Level | Select slider | Options: Low, Medium, High |
+| Areas for Improvement | Multiselect | Options: Course Content, Teaching Methods, Assessment, Resources, Support Services |
+| Open-ended Feedback | Text area | Required |
+| Future Plans | Selectbox | Options: Continue, Transfer, Undecided |
+| Program Strengths | Expandable text area | Optional |
+| Areas for Enhancement | Expandable text area | Optional |
+
+#### Validation and Submission
+
+* Requires program name and open-ended feedback before submission
+* Generates an anonymized student ID (UUID-based) for each submission
+* Displays a progress bar during submission
+* Shows a balloons animation on successful submission
+
+#### Data Storage
+
+* Stores feedback as JSON in S3 bucket `awsbin-amazonq-assets`
+* File naming convention: `feedback_{student_id}_{timestamp}.txt`
+* Uses boto3 S3 client with credentials from environment variables (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_DEFAULT_REGION`)
+
+#### Additional Features
+
+* Sidebar with FAQ section and data privacy notice
+* Anonymous and confidential data handling
+
+---
 
 ### Arkansas Onsite Scheduling Poll (`docker_app/app.py`)
 
-A scheduling poll for an onsite event in Little Rock, AR that collects:
+A scheduling poll that helps coordinate an in-person event in Little Rock, AR by collecting staff availability based on dates they are NOT available.
 
-* Name and email
-* Unavailable dates (August-October range)
-* Comments
+#### Branding and Styling
 
-Responses are stored in the S3 bucket `awsbin-arkansasonline-poll`.
+* Custom CSS with maroon theme (`#500000`)
+
+#### Form Fields
+
+| Field | Type | Details |
+|-------|------|---------|
+| Full Name | Text input | Required |
+| Email Address | Text input | Required |
+| Unavailable Dates | Multiselect | All weekdays from August 4 through October 17 |
+| Comments/Notes | Text area | Optional |
+
+#### Validation and Submission
+
+* Requires name and email before submission
+* Warns if no dates are selected
+* Generates a unique respondent ID (UUID-based)
+* Displays a progress bar during submission
+* Shows a balloons animation on successful submission
+
+#### Data Storage
+
+* Supports both S3 storage and local file storage (configurable via `USE_S3` flag)
+* S3 storage: bucket `awsbin-arkansasonline-poll`, path `scheduling/arkansas_poll_{id}_{timestamp}.json`
+* Uses boto3 with credentials from environment variables (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_DEFAULT_REGION`)
+
+#### Additional Features
+
+* Sidebar with "About this Poll" information and data privacy notice
+* Confidential data handling
+
+---
+
+### Common Features
+
+Both applications share the following characteristics:
+
+* **Framework**: Streamlit-based web interface
+* **Data Persistence**: AWS S3 for cloud storage
+* **Data Format**: JSON for all stored submissions
+* **Progress Indicators**: Visual progress bars during form submission
+* **Success Feedback**: Balloons animation on successful submission
+* **Sidebar Content**: FAQ/informational panels and privacy notices
+* **Privacy**: Anonymous or confidential data handling
+* **Theming**: Custom CSS with maroon color scheme
 
 ## Project Structure
 
